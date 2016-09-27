@@ -1,0 +1,10 @@
+{
+  "extends": [ "airbnb" ],
+  "globals": {
+    "document": true
+  },
+  "rules": {
+    "no-use-before-define": "off",
+    "new-cap": "off"
+  }
+}
