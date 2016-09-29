@@ -1,4 +1,13 @@
+html, body, #engine {
+  height: 100%;
+}
+
+#engine {
+  margin: 180px auto 0 auto;
+  width: 480px;
+}
+
 canvas {
   display: block;
-  margin: 0 auto;
+  border: 1px solid #ddd;
 }

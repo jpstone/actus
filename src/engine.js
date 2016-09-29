@@ -1,15 +1,16 @@
-let canvas;
+export { LayerFactory, CircleFactory, RectangleFactory, BallFactory, PaddleFactory, loop };
 
-export { StageFactory, CircleFactory, RectangleFactory, BallFactory, loop };
-
-function StageFactory({ width = 480, height = 320, element = undefined } = {}) {
-  canvas = assemble(ElementFactory(element), CanvasFactory(width, height));
-  return canvas;
+function LayerFactory({ width = 480, height = 320, element = undefined } = {}) {
+  return { layer: assemble(ElementFactory(element), CanvasFactory(width, height)) };
 }
 
 function ElementFactory(element) {
   if (typeof element === 'object') {
-    return element;
+    if (element.layer) {
+      return element.layer;
+    } else if (element.nodeName) {
+      return element;
+    }
   } else if (typeof element === 'string') {
     return document.getElementById(element);
   }
@@ -17,13 +18,33 @@ function ElementFactory(element) {
 }
 
 function CanvasFactory(width, height) {
-  const canv = document.createElement('canvas');
-  canv.width = width;
-  canv.height = height;
-  return canv;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  return canvas;
+}
+
+function CircleFactory({
+  layer,
+  x = 240,
+  y = 160,
+  width = 40,
+  method = 'stroke',
+  style = 'green',
+} = {}) {
+  const canvas = getCanvas(layer);
+  const radius = width / 2;
+  const ctx = canvas.getContext('2d');
+  const draw = methods(ctx, style);
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  draw[method]();
+  ctx.closePath();
+  return { layer: canvas, x, y, width, radius, method, style };
 }
 
 function RectangleFactory({
+  layer,
   x = 160,
   y = 10,
   width = 100,
@@ -31,47 +52,87 @@ function RectangleFactory({
   method = 'stroke',
   style = 'green',
 } = {}) {
+  const canvas = getCanvas(layer);
   const ctx = canvas.getContext('2d');
   const draw = methods(ctx, style);
   ctx.beginPath();
   ctx.rect(x, y, width, height);
   draw[method]();
   ctx.closePath();
-  return { ctx, x, y, width, height, method, style };
+  return { layer: canvas, x, y, width, height, method, style };
 }
 
 function BallFactory({
-  x = canvas.width / 2,
-  y = canvas.height - 30,
+  layer,
+  x = 480 / 2,
+  y = 320 - 30,
   width = 20,
+  radius = 10,
   method = 'fill',
   style = '#0095dd',
 } = {}) {
-  const details = { x, y, width, method, style };
-  return Object.assign({}, MoveUpRightFactory(CircleFactory(details)));
+  const canvas = getCanvas(layer);
+  const instructions = { layer: canvas, x, y, width, radius, method, style };
+  return Object.assign(
+    {},
+    MoveUpRightFactory(Object.assign({ factory: BallFactory }, CircleFactory(instructions)))
+  );
 }
 
-function MoveUpRightFactory(drawing) {
-  const sprite = drawing;
-  let x = sprite.x;
-  let y = sprite.y;
+function PaddleFactory({
+  layer,
+  x,
+  y,
+  width,
+  height,
+  method = 'fill',
+  style = '#0095DD',
+} = {}) {
+  const canvas = getCanvas(layer);
+  const instructions = { layer: canvas, x, y, width, height, method, style };
+  return Object.assign({}, RectangleFactory(instructions));
+}
+
+function MoveUpRightFactory(item) {
+  const obj = item;
+  const radius = item.radius;
+  const canvas = obj.layer;
+  const ctx = canvas.getContext('2d');
+  let horizontalDistance = 2;
+  let verticalDistance = -2;
   let counter = 0;
-  const horizontalDistance = 5;
-  const verticalDistance = 0;
   return {
     moveUpRight: () => {
-      if (counter) sprite.ctx.clearRect(0, 0, canvas.width, canvas.height);
-      x += horizontalDistance;
-      y += verticalDistance;
-      BallFactory(Object.assign({}, sprite, { x, y }));
-      counter++;
+      if (counter) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (obj.y + verticalDistance < radius - 2 ||
+        obj.y + verticalDistance > canvas.height - (radius - 2)) {
+        verticalDistance = -verticalDistance;
+      }
+      if (obj.x + horizontalDistance < radius - 2 ||
+        obj.x + horizontalDistance > canvas.width - (radius - 2)) {
+        horizontalDistance = -horizontalDistance;
+      }
+      obj.x += horizontalDistance;
+      obj.y += verticalDistance;
+      obj.factory(obj);
+      counter += 1;
     },
-    currentPosition: () => ({ x, y }),
+    currentPosition: () => ({ x: obj.x, y: obj.y }),
   };
 }
 
-function assemble(element, canv) {
-  element.appendChild(canv);
+function assemble(element, canvas) {
+  const el = element;
+  const canv = canvas;
+  if (el.style.position !== 'relative') el.style.position = 'relative';
+  canv.style.position = 'absolute';
+  canv.style.left = 0;
+  canv.style.top = 0;
+  el.appendChild(canv);
+  Array.from(document.getElementsByTagName('canvas')).forEach((layer, index) => {
+    const layerUpdate = layer;
+    layerUpdate.style.zIndex = index;
+  });
   return canv;
 }
 
@@ -90,23 +151,14 @@ function methods(ctx, style) {
 }
 
 function loop(cb) {
-  setInterval(cb, 10);
+  setInterval(cb, 20);
 }
 
-function CircleFactory({
-  x = 240,
-  y = 160,
-  width = 40,
-  method = 'stroke',
-  style = 'green',
-} = {}) {
-  const radius = width / 2;
-  const ctx = canvas.getContext('2d');
-  const draw = methods(ctx, style);
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
-  draw[method]();
-  ctx.closePath();
-  return { ctx, x, y, width, method, style };
+function getCanvas(layer) {
+  if (layer && layer.layer) {
+    return layer.layer;
+  }
+
+  return layer;
 }
 

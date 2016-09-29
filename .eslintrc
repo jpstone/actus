@@ -5,6 +5,7 @@
   },
   "rules": {
     "no-use-before-define": "off",
-    "new-cap": "off"
+    "new-cap": "off",
+    "no-console": "off"
   }
 }
