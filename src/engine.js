@@ -1,16 +1,26 @@
-export { LayerFactory, CircleFactory, RectangleFactory, BallFactory, PaddleFactory, loop };
+import keyCode from './key-codes';
 
-function LayerFactory({ width = 480, height = 320, element = undefined } = {}) {
-  return { layer: assemble(ElementFactory(element), CanvasFactory(width, height)) };
+export {
+  LayerFactory,
+  CircleFactory,
+  RectangleFactory,
+  BallFactory,
+  PaddleFactory,
+  MoveRightTrait,
+  MoveLeftTrait,
+  MoveAroundStageTrait,
+  keyDownHandler,
+  AddTraits,
+  loop,
+};
+
+function LayerFactory(element = undefined, width = 480, height = 320) {
+  return assemble(ElementFactory(element), CanvasFactory(width, height));
 }
 
 function ElementFactory(element) {
   if (typeof element === 'object') {
-    if (element.layer) {
-      return element.layer;
-    } else if (element.nodeName) {
-      return element;
-    }
+    return element;
   } else if (typeof element === 'string') {
     return document.getElementById(element);
   }
@@ -24,6 +34,10 @@ function CanvasFactory(width, height) {
   return canvas;
 }
 
+function AddTraits(...args) {
+  return Object.assign({}, ...args);
+}
+
 function CircleFactory({
   layer,
   x = 240,
@@ -32,7 +46,7 @@ function CircleFactory({
   method = 'stroke',
   style = 'green',
 } = {}) {
-  const canvas = getCanvas(layer);
+  const canvas = layer;
   const radius = width / 2;
   const ctx = canvas.getContext('2d');
   const draw = methods(ctx, style);
@@ -51,15 +65,16 @@ function RectangleFactory({
   height = 40,
   method = 'stroke',
   style = 'green',
+  factory = () => {},
 } = {}) {
-  const canvas = getCanvas(layer);
+  const canvas = layer;
   const ctx = canvas.getContext('2d');
   const draw = methods(ctx, style);
   ctx.beginPath();
   ctx.rect(x, y, width, height);
   draw[method]();
   ctx.closePath();
-  return { layer: canvas, x, y, width, height, method, style };
+  return { layer: canvas, x, y, width, height, method, style, factory };
 }
 
 function BallFactory({
@@ -71,11 +86,11 @@ function BallFactory({
   method = 'fill',
   style = '#0095dd',
 } = {}) {
-  const canvas = getCanvas(layer);
+  const canvas = layer;
   const instructions = { layer: canvas, x, y, width, radius, method, style };
   return Object.assign(
     {},
-    MoveUpRightFactory(Object.assign({ factory: BallFactory }, CircleFactory(instructions)))
+    Object.assign({ factory: BallFactory }, CircleFactory(instructions))
   );
 }
 
@@ -87,13 +102,14 @@ function PaddleFactory({
   height,
   method = 'fill',
   style = '#0095DD',
+  factory = () => {},
 } = {}) {
-  const canvas = getCanvas(layer);
-  const instructions = { layer: canvas, x, y, width, height, method, style };
+  const canvas = layer;
+  const instructions = { layer: canvas, x, y, width, height, method, style, factory };
   return Object.assign({}, RectangleFactory(instructions));
 }
 
-function MoveUpRightFactory(item) {
+function MoveAroundStageTrait(item) {
   const obj = item;
   const radius = item.radius;
   const canvas = obj.layer;
@@ -101,24 +117,69 @@ function MoveUpRightFactory(item) {
   let horizontalDistance = 2;
   let verticalDistance = -2;
   let counter = 0;
-  return {
-    moveUpRight: () => {
-      if (counter) ctx.clearRect(0, 0, canvas.width, canvas.height);
-      if (obj.y + verticalDistance < radius - 2 ||
-        obj.y + verticalDistance > canvas.height - (radius - 2)) {
-        verticalDistance = -verticalDistance;
-      }
-      if (obj.x + horizontalDistance < radius - 2 ||
-        obj.x + horizontalDistance > canvas.width - (radius - 2)) {
-        horizontalDistance = -horizontalDistance;
-      }
-      obj.x += horizontalDistance;
-      obj.y += verticalDistance;
-      obj.factory(obj);
-      counter += 1;
+  return Object.assign(
+    {},
+    item,
+    {
+      moveAroundStage: () => {
+        if (counter) ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (obj.y + verticalDistance < 0 + radius ||
+          obj.y + verticalDistance > canvas.height - radius) {
+          verticalDistance = -verticalDistance;
+        }
+        if (obj.x + horizontalDistance < radius ||
+          obj.x + horizontalDistance > canvas.width - radius) {
+          horizontalDistance = -horizontalDistance;
+        }
+        obj.x += horizontalDistance;
+        obj.y += verticalDistance;
+        obj.factory(obj);
+        counter += 1;
+      },
+      currentPosition: () => ({ x: obj.x, y: obj.y }),
     },
-    currentPosition: () => ({ x: obj.x, y: obj.y }),
-  };
+  );
+}
+
+function MoveRightTrait(item) {
+  const obj = item;
+  const canvas = obj.layer;
+  const ctx = canvas.getContext('2d');
+  return Object.assign(
+    {},
+    {
+      moveRight: (e) => {
+        if (e.keyCode === keyCode.rightArrow && obj.x < (canvas.width - obj.width)) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          obj.x += 30;
+          obj.factory(obj);
+        }
+      },
+    },
+  );
+}
+
+function MoveLeftTrait(item) {
+  const obj = item;
+  const canvas = obj.layer;
+  const ctx = canvas.getContext('2d');
+  return Object.assign(
+    {},
+    {
+      moveLeft: (e) => {
+        if (e.keyCode === keyCode.leftArrow && obj.x > 0) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          obj.x -= 30;
+          obj.factory(obj);
+        }
+      },
+    },
+  );
+}
+
+function keyDownHandler(...args) {
+  const handlers = [...args];
+  document.addEventListener('keydown', e => handlers.forEach(handler => handler(e)));
 }
 
 function assemble(element, canvas) {
@@ -127,7 +188,7 @@ function assemble(element, canvas) {
   if (el.style.position !== 'relative') el.style.position = 'relative';
   canv.style.position = 'absolute';
   canv.style.left = 0;
-  canv.style.top = 0;
+  canv.style.top = 100;
   el.appendChild(canv);
   Array.from(document.getElementsByTagName('canvas')).forEach((layer, index) => {
     const layerUpdate = layer;
@@ -151,14 +212,6 @@ function methods(ctx, style) {
 }
 
 function loop(cb) {
-  setInterval(cb, 20);
-}
-
-function getCanvas(layer) {
-  if (layer && layer.layer) {
-    return layer.layer;
-  }
-
-  return layer;
+  setInterval(cb, 10);
 }
 

@@ -2,6 +2,11 @@ html, body, #engine {
   height: 100%;
 }
 
+#game-over {
+  height: 100px;
+  visibility: hidden;
+}
+
 #engine {
   margin: 180px auto 0 auto;
   width: 480px;
