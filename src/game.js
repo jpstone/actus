@@ -11,7 +11,6 @@ let paddle = engine.PaddleFactory({
   height: 10,
   x: (paddleLayer.width - 75) / 2,
   y: paddleLayer.height - 10,
-  factory: engine.PaddleFactory,
 });
 
 gameOver.style.visibility = 'hidden';

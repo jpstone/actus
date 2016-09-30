@@ -41,10 +41,11 @@ function AddTraits(...args) {
 function CircleFactory({
   layer,
   x = 240,
-  y = 160,
-  width = 40,
-  method = 'stroke',
-  style = 'green',
+  y = 290,
+  width = 20,
+  method = 'fill',
+  style = '#0095DD',
+  factory = () => {},
 } = {}) {
   const canvas = layer;
   const radius = width / 2;
@@ -54,7 +55,7 @@ function CircleFactory({
   ctx.arc(x, y, radius, 0, Math.PI * 2);
   draw[method]();
   ctx.closePath();
-  return { layer: canvas, x, y, width, radius, method, style };
+  return Object.assign({}, { layer, x, y, width, method, style, radius, factory });
 }
 
 function RectangleFactory({
@@ -63,8 +64,8 @@ function RectangleFactory({
   y = 10,
   width = 100,
   height = 40,
-  method = 'stroke',
-  style = 'green',
+  method = 'fill',
+  style = '#0095DD',
   factory = () => {},
 } = {}) {
   const canvas = layer;
@@ -74,44 +75,22 @@ function RectangleFactory({
   ctx.rect(x, y, width, height);
   draw[method]();
   ctx.closePath();
-  return { layer: canvas, x, y, width, height, method, style, factory };
+  return Object.assign({}, { layer, x, y, width, height, method, style, factory });
 }
 
-function BallFactory({
-  layer,
-  x = 480 / 2,
-  y = 320 - 30,
-  width = 20,
-  radius = 10,
-  method = 'fill',
-  style = '#0095dd',
-} = {}) {
-  const canvas = layer;
-  const instructions = { layer: canvas, x, y, width, radius, method, style };
-  return Object.assign(
-    {},
-    Object.assign({ factory: BallFactory }, CircleFactory(instructions))
-  );
+function BallFactory(...args) {
+  const blueprint = Object.assign({ factory: BallFactory }, ...args);
+  return Object.assign({}, CircleFactory(blueprint));
 }
 
-function PaddleFactory({
-  layer,
-  x,
-  y,
-  width,
-  height,
-  method = 'fill',
-  style = '#0095DD',
-  factory = () => {},
-} = {}) {
-  const canvas = layer;
-  const instructions = { layer: canvas, x, y, width, height, method, style, factory };
-  return Object.assign({}, RectangleFactory(instructions));
+function PaddleFactory(...args) {
+  const blueprint = Object.assign({ factory: PaddleFactory }, ...args);
+  return Object.assign({}, RectangleFactory(blueprint));
 }
 
-function MoveAroundStageTrait(item) {
-  const obj = item;
-  const radius = item.radius;
+function MoveAroundStageTrait(product) {
+  const obj = product;
+  const radius = product.radius;
   const canvas = obj.layer;
   const ctx = canvas.getContext('2d');
   let horizontalDistance = 2;
@@ -119,7 +98,7 @@ function MoveAroundStageTrait(item) {
   let counter = 0;
   return Object.assign(
     {},
-    item,
+    product,
     {
       moveAroundStage: () => {
         if (counter) ctx.clearRect(0, 0, canvas.width, canvas.height);
