@@ -120,8 +120,8 @@ function MoveAroundStageTrait(product) {
   );
 }
 
-function MoveRightTrait(item) {
-  const obj = item;
+function MoveRightTrait(product) {
+  const obj = product;
   const canvas = obj.layer;
   const ctx = canvas.getContext('2d');
   return Object.assign(
@@ -138,8 +138,8 @@ function MoveRightTrait(item) {
   );
 }
 
-function MoveLeftTrait(item) {
-  const obj = item;
+function MoveLeftTrait(product) {
+  const obj = product;
   const canvas = obj.layer;
   const ctx = canvas.getContext('2d');
   return Object.assign(
