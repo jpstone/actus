@@ -4,8 +4,8 @@ const gameDiv = document.getElementById('engine');
 const ballLayer = engine.LayerFactory(gameDiv);
 const paddleLayer = engine.LayerFactory(gameDiv);
 const gameOver = document.getElementById('game-over');
-let ball = engine.BallFactory({ layer: ballLayer });
-let paddle = engine.PaddleFactory({
+const ball = engine.BallFactory({ layer: ballLayer });
+const paddle = engine.PaddleFactory({
   layer: paddleLayer,
   width: 75,
   height: 10,
@@ -14,15 +14,21 @@ let paddle = engine.PaddleFactory({
 });
 
 gameOver.style.visibility = 'hidden';
-ball = engine.AddTraits(engine.MoveAroundStageTrait(ball));
-paddle = engine.AddTraits(engine.MoveRightTrait(paddle), engine.MoveLeftTrait(paddle));
+const bouncingBall = engine.AddTraits(engine.MoveAroundStageTrait(ball));
+const playerPaddle = engine.AddTraits(
+  engine.MoveRightTrait(paddle, 'rightArrow'),
+  engine.MoveLeftTrait(paddle, 'leftArrow')
+);
 
-engine.keyDownHandler(paddle.moveRight, paddle.moveLeft);
+engine.keyDownHandler(playerPaddle.moveRight, playerPaddle.moveLeft);
 engine.loop(() => {
-  const position = ball.currentPosition();
-  if (position.y - ball.radius === ball.layer.height - ball.width) {
-    gameOver.style.visibility = 'visible';
-    return;
+  const ballPosition = bouncingBall.currentPosition();
+  const paddlePosition = playerPaddle.currentPosition();
+  if (ballPosition.y - bouncingBall.radius === bouncingBall.layer.height - bouncingBall.width) {
+    if (ballPosition.x < paddlePosition.x || ballPosition.x > paddlePosition.x + paddle.width) {
+      gameOver.style.visibility = 'visible';
+      return;
+    }
   }
-  ball.moveAroundStage();
+  bouncingBall.moveAroundStage();
 });

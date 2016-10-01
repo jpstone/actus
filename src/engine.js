@@ -100,7 +100,7 @@ function MoveAroundStageTrait(product) {
     {},
     product,
     {
-      moveAroundStage: () => {
+      moveAroundStage() {
         if (counter) ctx.clearRect(0, 0, canvas.width, canvas.height);
         if (obj.y + verticalDistance < 0 + radius ||
           obj.y + verticalDistance > canvas.height - radius) {
@@ -115,50 +115,57 @@ function MoveAroundStageTrait(product) {
         obj.factory(obj);
         counter += 1;
       },
-      currentPosition: () => ({ x: obj.x, y: obj.y }),
     },
+    CurrentPositionTrait(obj),
   );
 }
 
-function MoveRightTrait(product) {
+function MoveRightTrait(product, key) {
   const obj = product;
   const canvas = obj.layer;
   const ctx = canvas.getContext('2d');
   return Object.assign(
     {},
     {
-      moveRight: (e) => {
-        if (e.keyCode === keyCode.rightArrow && obj.x < (canvas.width - obj.width)) {
+      moveRight(e) {
+        if (e.keyCode === keyCode[key] && obj.x < (canvas.width - obj.width)) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           obj.x += 30;
           obj.factory(obj);
         }
       },
     },
+    CurrentPositionTrait(obj),
   );
 }
 
-function MoveLeftTrait(product) {
+function MoveLeftTrait(product, key) {
   const obj = product;
   const canvas = obj.layer;
   const ctx = canvas.getContext('2d');
   return Object.assign(
     {},
     {
-      moveLeft: (e) => {
-        if (e.keyCode === keyCode.leftArrow && obj.x > 0) {
+      moveLeft(e) {
+        if (e.keyCode === keyCode[key] && obj.x > 0) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           obj.x -= 30;
           obj.factory(obj);
         }
       },
     },
+    CurrentPositionTrait(obj),
   );
+}
+
+function CurrentPositionTrait(product) {
+  const obj = product;
+  return { currentPosition: () => ({ x: obj.x, y: obj.y }) };
 }
 
 function keyDownHandler(...args) {
   const handlers = [...args];
-  document.addEventListener('keydown', e => handlers.forEach(handler => handler(e)));
+  handlers.forEach(handler => document.addEventListener('keydown', handler));
 }
 
 function assemble(element, canvas) {
