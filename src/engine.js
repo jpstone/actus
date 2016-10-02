@@ -12,6 +12,8 @@ export {
   keyDownHandler,
   AddTraits,
   loop,
+  BrickFactory,
+  DisappearTrait,
 };
 
 function LayerFactory(element = undefined, width = 480, height = 320) {
@@ -88,13 +90,32 @@ function PaddleFactory(...args) {
   return Object.assign({}, RectangleFactory(blueprint));
 }
 
+function BrickFactory(...args) {
+  const blueprint = Object.assign({ factory: BrickFactory }, ...args);
+  return Object.assign({}, RectangleFactory(blueprint), ...args);
+}
+
+function DisappearTrait(product) {
+  const obj = product;
+  return Object.assign(
+    {},
+    {
+      disappear() {
+        const canvas = obj.layer;
+        const ctx = canvas.getContext('2d');
+        ctx.clearReact(obj.x, obj.y, obj.width, obj.height);
+      },
+    },
+  );
+}
+
 function MoveAroundStageTrait(product) {
   const obj = product;
   const radius = product.radius;
   const canvas = obj.layer;
   const ctx = canvas.getContext('2d');
-  let horizontalDistance = 2;
-  let verticalDistance = -2;
+  let horizontalDistance = 1;
+  let verticalDistance = -1;
   let counter = 0;
   return Object.assign(
     {},
